@@ -1,87 +1,21 @@
-const crypto = require('crypto');
 const readline = require('readline-sync');
-const TableCli = require('cli-table');
+const GameRulesLogic = require('./GameRulesLogic')
+const GenScrtKey = require('./GenScrtKey')
+const GenHMAC = require('./GenHMAC')
+const TableGen = require('./TableGen')
 
-class GameRulesLogic {
-    constructor(args){
-        this.valuesArr = args;
-        this.halfCircleAm = (this.valuesArr.length-1) / 2;
-    }
 
-    checkGameState(player, comp){
-        let indexPlayer =  this.valuesArr.indexOf(player);
-        let indexComp = this.valuesArr.indexOf(comp);
-        if(indexPlayer == indexComp){
-            return "Draw";
-        } else if(indexPlayer < indexComp && indexComp <= indexPlayer + this.halfCircleAm){
-            return "Lose";
-        } else if(indexPlayer > indexComp && indexPlayer <= indexComp + this.halfCircleAm) {
-            return "Win";
-        } else if(indexPlayer -  this.halfCircleAm < 0) {
-            return "Win";
-        } else {
-            return "Lose";
-        }
-    }
-}
 
-class GenScrtKey {
-    static createScrtKey(){
-        return crypto.generateKeySync('hmac', { length: 256 }).export().toString('hex');
-    }
-}
-
-class GenHMAC {
-    createNewHMAC(scrKey, str){
-        if(!scrKey || !str){
-            throw(new Error("scrKey or str, or both are not defined!"));
-        }
-        this.scrKey = scrKey;
-        this.keyHMAC =  crypto.createHmac('sha256', this.scrKey).update(str).digest('hex');
-    }
-
-    getScrtKey(){
-        if(this.scrKey){
-            return this.scrKey;
-        }
-        throw(new Error("this.scrKey is not defined!"));
-    }
-
-    getHMACKey(){
-        if(this.keyHMAC){
-            return this.keyHMAC;
-        }
-        throw(new Error("this.keyHMAC is not defined!"));
-    }
-}
-
-class TableGen {
-    constructor(args, logObj){
-        this.args = args;
-        this.logObj = logObj;
-        this.tableObj = new TableCli({ head: ["v User\\PC >", ...this.args] });
-        let arrayTable = [];
-        for(let i = 0; i < this.args.length; ++i){
-            let conLineObj = {};
-            conLineObj[this.args[i]] = [];
-            for(let n = 0;n < this.args.length; ++n){
-                conLineObj[this.args[i]].push(logObj.checkGameState(this.args[i],this.args[n]));
-            }
-            arrayTable.push(conLineObj);
-        }
-        this.tableObj.push(...arrayTable);
-    }
-
-    showTable(){
-        console.log("The table is viewed from the user's perspective", `\n${this.tableObj.toString()}`);
-    }
-}
-
-function prsArgChecker(gameArgs){
+function arrToSet(gameArgs){
     let setChecker = new Set();   
     for(let i = 0;i<gameArgs.length;++i) {
         setChecker.add(gameArgs[i]);
     }
+    return setChecker;
+}
+
+function processArgChecker(gameArgs){
+    let setChecker = arrToSet(gameArgs)   
     if(gameArgs.length < 3) {
         console.log('To start playing you must have at least 3 strings!\nExample one: node main.js paper rock spock\nExample two: node main.js tiger lion hamster dragon elephant');
         return false; 
@@ -100,7 +34,7 @@ let objHMAC = new GenHMAC();
 
 let gameArgs = process.argv.slice(2,process.argv.length);
 
-let isCorrect = prsArgChecker(gameArgs);
+let isCorrect = processArgChecker(gameArgs);
 
 if(!isCorrect){
     return;
